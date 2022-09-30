@@ -98,9 +98,10 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
             return distributions.Categorical(logits=self.logits_na(observation))
         else:
             mean = self.mean_net(observation)
-            logstd = self.logstd.unsqueeze(0)
-            # import pdb; pdb.set_trace()
-            return distributions.Normal(mean, torch.exp(logstd))
+            logstd = self.logstd
+            if torch.any(torch.isinf(torch.exp(logstd))) or torch.any(torch.isinf(mean)):
+                import pdb; pdb.set_trace()
+            return distributions.MultivariateNormal(mean, torch.diag(torch.exp(logstd)))
 
 
 #####################################################
@@ -160,16 +161,10 @@ class MLPPolicyPG(MLPPolicy):
             # is the expectation over collected trajectories of:
             # sum_{t=0}^{T-1} [grad [log pi(a_t|s_t) * (Q_t - b_t)]]
         # HINT2: you will want to use the `log_prob` method on the distribution returned
-            # by the `forward` method        
+            # by the `forward` method      
         N = observations.shape[0]
 
         log_probs = self(observations).log_prob(actions)
-        
-        if not self.discrete:
-            log_probs = log_probs.sum(1)
-
-        
-        # import pdb; pdb.set_trace()
         rews = log_probs * advantages
         
         # Aggregate
@@ -178,6 +173,7 @@ class MLPPolicyPG(MLPPolicy):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+        print(self.logstd)
         
         if self.nn_baseline:
             ## TODO: update the neural network baseline using the q_values as
@@ -190,18 +186,12 @@ class MLPPolicyPG(MLPPolicy):
             # Normalize
             q_values = (q_values - q_values.mean() ) / (q_values.std() + 1e-8)
             q_values_tensor = ptu.from_numpy(q_values)
-            tol = 1e-4
-            err = 10.
-            k = 0
-            while err > tol and k < 1:
-                baseline_loss = self.baseline_loss(self.baseline(observations).squeeze(), q_values_tensor)
-                err = ptu.to_numpy(baseline_loss.squeeze())
-                # print(baseline_loss)
-                self.baseline_opt.zero_grad()
-                baseline_loss.backward()
-                self.baseline_opt.step()
-                k += 1
-            print(f"Fitted q-network in {k} iterations.")
+
+            baseline_loss = self.baseline_loss(self.baseline(observations).squeeze(), q_values_tensor)
+
+            self.baseline_opt.zero_grad()
+            baseline_loss.backward()
+            self.baseline_opt.step()
 
 
         train_log = {
