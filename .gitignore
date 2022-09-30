@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 
 # data/
+
+*.zip
+hw2/_rtg_nnbaseline
