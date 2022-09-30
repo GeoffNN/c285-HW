@@ -108,8 +108,13 @@ def main():
     logdir = logdir_prefix + args.exp_name + '_' + args.env_name + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")
     logdir = os.path.join(data_path, logdir)
     params['logdir'] = logdir
+
     if not(os.path.exists(logdir)):
         os.makedirs(logdir)
+
+    # Log called args
+    with open(os.path.join(logdir, 'args.log'), 'w') as f:
+        print(args, file=f)
 
     ###################
     ### RUN TRAINING

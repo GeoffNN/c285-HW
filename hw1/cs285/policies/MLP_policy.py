@@ -108,9 +108,31 @@ class MLPPolicySL(MLPPolicy):
             self, observations, actions,
             adv_n=None, acs_labels_na=None, qvals=None
     ):
-        # TODO: update the policy and return the loss
-        loss = TODO
+        # Done: update the policy and return the loss
+        self.optimizer.zero_grad()
+        if self.discrete:
+            loss = self.loss(
+                self(observations), actions
+            )
+        else:
+            loss = self.loss(
+                self(observations).rsample(), actions
+            )
+
+        loss.backward()
+        self.optimizer.step()
+
         return {
             # You can add extra logging information here, but keep this line
             'Training Loss': ptu.to_numpy(loss),
         }
+
+    def forward(self, observation: torch.FloatTensor) -> Any:
+        if self.discrete:
+            return self.logits_na(observation)
+        else:
+            mean = self.mean_net(observation)
+            logstd = self.logstd
+            return distributions.Normal(mean, torch.exp(logstd))
+
+        
