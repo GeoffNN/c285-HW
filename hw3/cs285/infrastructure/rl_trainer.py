@@ -364,6 +364,7 @@ class RL_Trainer(object):
     ####################################
     ####################################
     def perform_dqn_logging(self, all_logs):
+        print("Logging")
         last_log = all_logs[-1]
 
         episode_rewards = self.env.get_episode_rewards()
