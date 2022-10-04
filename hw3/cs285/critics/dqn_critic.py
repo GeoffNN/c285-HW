@@ -74,7 +74,9 @@ class DQNCritic(BaseCritic):
             # is being updated, but the Q-value for this action is obtained from the
             # target Q-network. Please review Lecture 8 for more details,
             # and page 4 of https://arxiv.org/pdf/1509.06461.pdf is also a good reference.
-            TODO
+            action = qa_t_values.argmax(dim=1)
+            batch_size = qa_tp1_values.shape[0]
+            q_tp1 = qa_tp1_values[torch.arange(batch_size), action]
         else:
             q_tp1, _ = qa_tp1_values.max(dim=1)
 
