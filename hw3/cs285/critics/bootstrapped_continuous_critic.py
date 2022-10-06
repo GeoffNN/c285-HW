@@ -95,7 +95,7 @@ class BootstrappedContinuousCritic(nn.Module, BaseCritic):
         for i in range(self.num_grad_steps_per_target_update * self.num_target_updates):
             if i % self.num_grad_steps_per_target_update == 0:
                 next_val_no = self(next_ob_no)
-                targets = reward_n + self.gamma * next_val_no * (1-terminal_n).detach()
+                targets = (reward_n + self.gamma * next_val_no * (1-terminal_n)).detach()
 
             self.optimizer.zero_grad()
             loss = self.loss(targets, self(ob_no))
