@@ -24,7 +24,7 @@ class Q_Trainer(object):
 
         self.params['agent_class'] = DQNAgent
         self.params['agent_params'] = self.agent_params
-        self.params['train_batch_size'] = params['batch_size']
+        self.params['train_batch_size'] = self.agent_params['batch_size']
         self.params['env_wrappers'] = self.agent_params['env_wrappers']
 
         self.rl_trainer = RL_Trainer(self.params)
@@ -83,6 +83,10 @@ def main():
     params['logdir'] = logdir
     if not(os.path.exists(logdir)):
         os.makedirs(logdir)
+
+    # Log called args
+    with open(os.path.join(logdir, 'params.log'), 'w') as f:
+        print(params, file=f)
 
     print("\n\n\nLOGGING TO: ", logdir, "\n\n\n")
 

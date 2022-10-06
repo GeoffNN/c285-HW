@@ -4,7 +4,7 @@ import os
 import sys
 import time
 from cs285.infrastructure.atari_wrappers import ReturnWrapper
-
+import pdb
 import gym
 from gym import wrappers
 import numpy as np
@@ -302,7 +302,7 @@ class RL_Trainer(object):
             train_video_paths: paths which also contain videos for visualization purposes
         """
         
-        # TODO decide whether to load training data or use the current policy to collect more data
+        # decide whether to load training data or use the current policy to collect more data
         # HINT: depending on if it's the first iteration or not, decide whether to either
                 # (1) load the data. In this case you can directly return as follows
                 # ``` return loaded_paths, 0, None ```

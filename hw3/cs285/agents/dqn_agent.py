@@ -34,7 +34,6 @@ class DQNAgent(object):
         self.rng = np.random.default_rng(agent_params['seed'])
 
     def add_to_replay_buffer(self, paths):
-        # TODO: part 2
         pass
 
     def step_env(self):
@@ -52,11 +51,11 @@ class DQNAgent(object):
         eps = self.exploration.value(self.t)
 
         # TODO use epsilon greedy exploration when selecting action
-        perform_random_action = (float(self.rng.uniform()) < eps)
+        # HINT: take random action (can sample from self.env.action_space)
+            # with probability eps (see np.random.random())
+            # OR if your current step number (see self.t) is less that self.learning_starts
+        perform_random_action = float(self.rng.uniform()) < eps or self.t < self.learning_starts
         if perform_random_action:
-            # HINT: take random action (can sample from self.env.action_space)
-                # with probability eps (see np.random.random())
-                # OR if your current step number (see self.t) is less that self.learning_starts
             action = self.env.action_space.sample()
         else:
             # HINT: Your actor will take in multiple previous observations ("frames") in order

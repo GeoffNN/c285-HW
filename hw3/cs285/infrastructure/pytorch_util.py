@@ -77,3 +77,11 @@ def from_numpy(*args, **kwargs):
 
 def to_numpy(tensor):
     return tensor.to('cpu').detach().numpy()
+
+def get_grad_norm(parameters):
+    """
+    Outputs L2 norm of the vectorized gradients.
+
+    Call this after loss.backward().
+    """
+    return torch.sqrt(sum([torch.linalg.norm(p.grad) ** 2 for p in parameters]))

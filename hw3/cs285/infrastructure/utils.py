@@ -1,6 +1,9 @@
 import numpy as np
+import torch
 import time
 import copy
+
+from cs285.infrastructure import pytorch_util as ptu
 
 ############################################
 ############################################
@@ -107,7 +110,7 @@ def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, r
     timesteps_this_batch = 0
     paths = []
     while timesteps_this_batch < min_timesteps_per_batch:
-        path = sample_trajectory(env, policy, max_path_length, render=render)
+        path = sample_trajectory(env, policy, max_path_length, render=render, render_mode=render_mode)
         paths.append(path)
         timesteps_this_batch += get_pathlength(path)
     return paths, timesteps_this_batch
@@ -302,4 +305,3 @@ def sample_random_trajectories(env, min_timesteps_per_batch, max_path_length, re
         timesteps_this_batch += get_pathlength(path)
         print('At timestep:    ', timesteps_this_batch, '/', min_timesteps_per_batch, end='\r')
     return paths, timesteps_this_batch
-

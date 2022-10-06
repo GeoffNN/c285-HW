@@ -35,6 +35,7 @@ class DQNCritic(BaseCritic):
         self.learning_rate_scheduler = optim.lr_scheduler.LambdaLR(
             self.optimizer,
             self.optimizer_spec.learning_rate_schedule,
+            verbose=True
         )
         self.loss = nn.SmoothL1Loss()  # AKA Huber loss
         self.q_net.to(ptu.device)
@@ -74,17 +75,17 @@ class DQNCritic(BaseCritic):
             # is being updated, but the Q-value for this action is obtained from the
             # target Q-network. Please review Lecture 8 for more details,
             # and page 4 of https://arxiv.org/pdf/1509.06461.pdf is also a good reference.
-            action = qa_t_values.argmax(dim=1)
+            action = qa_t_values.argmax(dim=-1)
             batch_size = qa_tp1_values.shape[0]
             q_tp1 = qa_tp1_values[torch.arange(batch_size), action]
         else:
-            q_tp1, _ = qa_tp1_values.max(dim=1)
+            q_tp1, _ = qa_tp1_values.max(dim=-1)
 
         # TODO compute targets for minimizing Bellman error
         # HINT: as you saw in lecture, this would be:
             #currentReward + self.gamma * qValuesOfNextTimestep * (not terminal)
         # TODO(gnegiar): Next time step?
-        target = reward_n + self.gamma * q_tp1 * (1-terminal_n)
+        target = reward_n + self.gamma * q_tp1 * (1 - terminal_n)
         target = target.detach()
 
         assert q_t_values.shape == target.shape
@@ -97,6 +98,7 @@ class DQNCritic(BaseCritic):
 
         return {
             'Training Loss': ptu.to_numpy(loss),
+            'Gradient norm': ptu.to_numpy(ptu.get_grad_norm(self.q_net.parameters()))
         }
 
     def update_target_network(self):
