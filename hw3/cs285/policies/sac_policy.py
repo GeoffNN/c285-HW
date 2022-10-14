@@ -47,12 +47,11 @@ class MLPPolicySAC(MLPPolicy):
             observation = obs[None]
 
         obs = ptu.from_numpy(observation)
+        distribution = self(obs)
         if sample:
-            distribution = self(obs)
             action = distribution.sample()
         else:
-            # TODO: Not 100% sure here
-            action = self.mean_net(obs)
+            action = distribution.mean
         return ptu.to_numpy(action)
 
     # This function defines the forward pass of the network.
@@ -72,29 +71,40 @@ class MLPPolicySAC(MLPPolicy):
         action_distribution = sac_utils.SquashedNormal(mean, std)
         return action_distribution
 
-    def update(self, obs: np.ndarray, critic):
-        # TODO Update actor network and entropy regularizer
-        # return losses and alpha value
-        obs = ptu.from_numpy(obs)
-        action = self(obs).rsample()
+    def get_action_and_log_prob_diff(self, obs: torch.Tensor):
+        distribution = self(obs)
+        action = distribution.rsample()
+        log_prob = self(obs).log_prob(action).sum(-1)
+        return action, log_prob
 
-        q_value = torch.min(*critic(obs, action))
-        log_prob = self(obs).log_prob(action)
+    def update_actor(self, obs: torch.Tensor, critic):
+        action, log_prob = self.get_action_and_log_prob_diff(obs)
 
         # Update actor
+        q_value = torch.min(*critic(obs, action))
         actor_loss = torch.mean(self.alpha * log_prob - q_value)
 
         self.optimizer.zero_grad()
         actor_loss.backward()
         self.optimizer.step()
+        return actor_loss.item()
 
-        # Update entropy penalty scale
+    def update_temperature(self, obs: torch.Tensor):
+        action, log_prob = self.get_action_and_log_prob_diff(obs)
+        # TODO(gnegiar): debug why alpha_loss is sometimes negative.
         alpha_loss = torch.mean(-self.alpha * (log_prob + self.target_entropy).detach())
+
         self.log_alpha_optimizer.zero_grad()
         alpha_loss.backward()
         self.log_alpha_optimizer.step()
+        return alpha_loss.item()
 
-        # Convert back to numpy and return
-        actor_loss = actor_loss.item()
-        alpha_loss = alpha_loss.item()
+    def update(self, obs: np.ndarray, critic):
+        # TODO Update actor network and entropy regularizer
+        # return losses and alpha value
+        obs = ptu.from_numpy(obs)
+
+        actor_loss = self.update_actor(obs, critic)
+        alpha_loss = self.update_temperature(obs)
+
         return actor_loss, alpha_loss, self.alpha
