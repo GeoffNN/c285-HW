@@ -5,7 +5,6 @@ from cs285.infrastructure import sac_utils
 from cs285.infrastructure import pytorch_util as ptu
 from torch import nn
 from torch import optim
-import itertools
 
 class MLPPolicySAC(MLPPolicy):
     def __init__(self,
@@ -36,12 +35,25 @@ class MLPPolicySAC(MLPPolicy):
     @property
     def alpha(self):
         # TODO: Formulate entropy term
-        return entropy
+        return torch.exp(self.log_alpha)
 
     def get_action(self, obs: np.ndarray, sample=True) -> np.ndarray:
         # TODO: return sample from distribution if sampling
         # if not sampling return the mean of the distribution 
-        return action
+        # Note that this function will not be differentiated since it only uses numpy arrays.
+        if len(obs.shape) > 1:
+            observation = obs
+        else:
+            observation = obs[None]
+
+        obs = ptu.from_numpy(observation)
+        if sample:
+            distribution = self(obs)
+            action = distribution.sample()
+        else:
+            # TODO: Not 100% sure here
+            action = self.mean_net(obs)
+        return ptu.to_numpy(action)
 
     # This function defines the forward pass of the network.
     # You can return anything you want, but you should be able to differentiate
@@ -54,10 +66,35 @@ class MLPPolicySAC(MLPPolicy):
         # HINT: 
         # You will need to clip log values
         # You will need SquashedNormal from sac_utils file 
+        mean = self.mean_net(observation)
+        logstd = self.logstd.clip(*self.log_std_bounds)
+        std = torch.exp(logstd)
+        action_distribution = sac_utils.SquashedNormal(mean, std)
         return action_distribution
 
-    def update(self, obs, critic):
+    def update(self, obs: np.ndarray, critic):
         # TODO Update actor network and entropy regularizer
         # return losses and alpha value
+        obs = ptu.from_numpy(obs)
+        action = self(obs).rsample()
 
+        q_value = torch.min(*critic(obs, action))
+        log_prob = self(obs).log_prob(action)
+
+        # Update actor
+        actor_loss = torch.mean(self.alpha * log_prob - q_value)
+
+        self.optimizer.zero_grad()
+        actor_loss.backward()
+        self.optimizer.step()
+
+        # Update entropy penalty scale
+        alpha_loss = torch.mean(-self.alpha * (log_prob + self.target_entropy).detach())
+        self.log_alpha_optimizer.zero_grad()
+        alpha_loss.backward()
+        self.log_alpha_optimizer.step()
+
+        # Convert back to numpy and return
+        actor_loss = actor_loss.item()
+        alpha_loss = alpha_loss.item()
         return actor_loss, alpha_loss, self.alpha

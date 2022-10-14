@@ -226,6 +226,7 @@ class RL_Trainer(object):
             # decide if videos should be rendered/logged at this iteration
             if itr % self.params['video_log_freq'] == 0 and self.params['video_log_freq'] != -1:
                 self.logvideo = True
+                print("Logging video.")
             else:
                 self.logvideo = False
 

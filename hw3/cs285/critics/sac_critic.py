@@ -56,6 +56,11 @@ class SACCritic(nn.Module, BaseCritic):
 
     def forward(self, obs: torch.Tensor, action: torch.Tensor):
         # TODO: return the two q values
+        batch_size = obs.shape[0]
+        obs = obs.reshape(batch_size, -1)
+        action = action.reshape(batch_size, -1)
+        inputs = torch.concat((obs, action), dim=-1)
+        values = (self.Q1(inputs), self.Q2(inputs))
         return values
 
 
