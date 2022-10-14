@@ -55,10 +55,10 @@ class SACAgent(BaseAgent):
 
         ob_no, ac_na, next_ob_no, re_n, terminal_n = map(ptu.from_numpy, (ob_no, ac_na, next_ob_no, re_n, terminal_n))
 
-        next_action_distribution = self.actor(next_ob_no)
-        next_ac_na = next_action_distribution.sample()
-        next_log_prob = next_action_distribution.log_prob(next_ac_na).sum(-1)
-        target = re_n + self.gamma * (1 - terminal_n) * (torch.min(*self.critic_target(next_ob_no, next_ac_na)) - self.actor.alpha * next_log_prob) 
+        next_ac_na, next_log_prob = self.actor.get_action_and_log_prob_diff(next_ob_no)
+        next_q_value = torch.min(*self.critic_target(next_ob_no, next_ac_na))
+        
+        target = re_n + self.gamma * (1 - terminal_n) * (next_q_value - self.actor.alpha * next_log_prob) 
         target = target.detach()
 
         predicted = self.critic(ob_no, ac_na)
