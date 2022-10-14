@@ -57,7 +57,7 @@ class SACAgent(BaseAgent):
 
         next_action_distribution = self.actor(next_ob_no)
         next_ac_na = next_action_distribution.sample()
-        next_log_prob = next_action_distribution.log_prob(next_ac_na)
+        next_log_prob = next_action_distribution.log_prob(next_ac_na).sum(-1)
         target = re_n + self.gamma * (1 - terminal_n) * (torch.min(*self.critic_target(next_ob_no, next_ac_na)) - self.actor.alpha * next_log_prob) 
         target = target.detach()
 
