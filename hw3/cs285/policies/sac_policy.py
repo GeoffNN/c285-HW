@@ -74,7 +74,7 @@ class MLPPolicySAC(MLPPolicy):
     def get_action_and_log_prob_diff(self, obs: torch.Tensor):
         distribution = self(obs)
         action = distribution.rsample()
-        log_prob = self(obs).log_prob(action).sum(-1)
+        log_prob = distribution.log_prob(action).sum(-1)
         return action, log_prob
 
     def update_actor(self, obs: torch.Tensor, critic):
@@ -92,7 +92,9 @@ class MLPPolicySAC(MLPPolicy):
     def update_temperature(self, obs: torch.Tensor):
         action, log_prob = self.get_action_and_log_prob_diff(obs)
         # TODO(gnegiar): debug why alpha_loss is sometimes negative.
-        alpha_loss = torch.mean(-self.alpha * (log_prob + self.target_entropy).detach())
+        alpha_loss = torch.mean(-1. * self.alpha * (log_prob + self.target_entropy).detach())
+        # if alpha_loss < 0:
+        #     import pdb; pdb.set_trace()
 
         self.log_alpha_optimizer.zero_grad()
         alpha_loss.backward()

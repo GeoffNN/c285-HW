@@ -57,13 +57,17 @@ class SACAgent(BaseAgent):
 
         next_ac_na, next_log_prob = self.actor.get_action_and_log_prob_diff(next_ob_no)
         next_q_value = torch.min(*self.critic_target(next_ob_no, next_ac_na))
-        
+
         target = re_n + self.gamma * (1 - terminal_n) * (next_q_value - self.actor.alpha * next_log_prob) 
         target = target.detach()
 
         predicted = self.critic(ob_no, ac_na)
         # Average the predictions of the Q networks
-        critic_loss = self.critic.loss(sum(predicted) / len(predicted), target)
+        # import pdb; pdb.set_trace()
+
+        critic_loss = 0.
+        for predicted_q in predicted:
+            critic_loss += self.critic.loss(predicted_q, target)
 
         self.critic.optimizer.zero_grad()
         critic_loss.backward()
