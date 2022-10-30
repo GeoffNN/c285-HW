@@ -1,5 +1,5 @@
 export lr=.0003
-export actor_update_frequency=1
+export actor_update_frequency=10
 
 for seed in 5 4 3 2 1
   do
