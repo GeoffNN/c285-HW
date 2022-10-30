@@ -3,7 +3,6 @@ from torch import nn
 from torch import optim
 import numpy as np
 from cs285.infrastructure import pytorch_util as ptu
-from cs285.infrastructure import sac_utils
 import torch
 
 class SACCritic(nn.Module, BaseCritic):
@@ -55,9 +54,14 @@ class SACCritic(nn.Module, BaseCritic):
         )
 
     def forward(self, obs: torch.Tensor, action: torch.Tensor):
-        # TODO: get this from previous HW
-        return values
+        obs_action = torch.cat([obs, action], dim=-1)
+        q1 = self.Q1(obs_action)
+        q2 = self.Q2(obs_action)
+        return [q1, q2]
 
-
+    def forward_np(self, obs: np.ndarray, action: np.ndarray):
+        obs = ptu.from_numpy(obs)
+        predictions = self(obs)
+        return ptu.to_numpy(predictions)
 
         

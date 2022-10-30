@@ -133,3 +133,5 @@ dmypy.json
 *.zip
 hw2/_rtg_nnbaseline
 *.nfs*
+
+hw3_soln
