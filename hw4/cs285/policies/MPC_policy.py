@@ -149,12 +149,15 @@ class MPCPolicy(BasePolicy):
         # Hint: Remember that the model can process observations and actions
         #       in batch, which can be much faster than looping through each
         #       action sequence.
-        sum_of_rewards = np.zeros(self.N)
         obs = obs[None].repeat(self.N, axis=0)
-        # import pdb; pdb.set_trace()
+
+        # Actions are not used in get_reward
+        sum_of_rewards, terminals = self.env.get_reward(obs, candidate_action_sequences[:, 0])
+        assert sum_of_rewards.shape == (self.N,), sum_of_rewards.shape
+
         for t in range(self.horizon):
             try:
-                next_obs = model.get_prediction(obs, candidate_action_sequences[:, t], self.data_statistics)
+                obs = model.get_prediction(obs, candidate_action_sequences[:, t], self.data_statistics)
             except RuntimeError as e:
                 print(e)
                 print(obs.shape)
@@ -162,7 +165,6 @@ class MPCPolicy(BasePolicy):
                 print(candidate_action_sequences[:, t].shape)
                 for k, v in self.data_statistics.items():
                     print(k, v.shape)
-            
-            rew, terminals = self.env.get_reward(next_obs, candidate_action_sequences[:, t])
+            rew, terminals = self.env.get_reward(obs, candidate_action_sequences[:, t])
             sum_of_rewards += rew
         return sum_of_rewards
