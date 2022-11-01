@@ -56,7 +56,6 @@ class MPCPolicy(BasePolicy):
             random_action_sequences = np.random.uniform(self.low, self.high, size=(num_sequences, horizon, self.ac_dim))
             return random_action_sequences
         elif self.sample_strategy == 'cem':
-            print("Blah")
             # TODO(Q5): Implement action selection using CEM.
             # Begin with randomly selected actions, then refine the sampling distribution
             # iteratively as described in Section 3.3, "Iterative Random-Shooting with Refinement" of
@@ -73,20 +72,20 @@ class MPCPolicy(BasePolicy):
                 if i == 0:
                     action_sequences = self.sample_action_sequences(num_sequences, horizon, None)
                 else:
-                    action_sequences = np.random.normal(elite_mean, np.sqrt(elite_var), size=(num_sequences, horizon))
+                    assert elite_mean.shape == elite_var.shape, (elite_mean.shape, elite_var.shape)
+                    action_sequences = np.random.normal(elite_mean, np.sqrt(elite_var), size=(num_sequences, horizon, self.ac_dim))
+                    assert action_sequences.shape == (num_sequences, horizon, self.ac_dim), action_sequences.shape
                 rewards = self.evaluate_candidate_sequences(action_sequences, obs)
 
                 # TODO: Check whether this is the top K or worst K
                 elite_action_sequences = action_sequences[rewards.argsort()[-self.cem_num_elites:]]
-                import pdb; pdb.set_trace()
+                # import pdb; pdb.set_trace()
                 if i == 0:
-                    elite_mean = elite_action_sequences.mean()
-                    elite_var = elite_action_sequences.std() ** 2
+                    elite_mean = elite_action_sequences.mean(0)
+                    elite_var = elite_action_sequences.std(0) ** 2
                 else:
-                    elite_mean += self.cem_alpha * (elite_action_sequences.mean() - elite_mean)
-                    elite_var += self.cem_alpha * (elite_action_sequences.std() ** 2 - elite_var)
-
-                pass
+                    elite_mean += self.cem_alpha * (elite_action_sequences.mean(0) - elite_mean)
+                    elite_var += self.cem_alpha * (elite_action_sequences.std(0) ** 2 - elite_var)
 
             # TODO(Q5): Set `cem_action` to the appropriate action chosen by CEM
             cem_action = elite_mean
@@ -151,11 +150,19 @@ class MPCPolicy(BasePolicy):
         #       in batch, which can be much faster than looping through each
         #       action sequence.
         sum_of_rewards = np.zeros(self.N)
-        states = [obs]
         obs = obs[None].repeat(self.N, axis=0)
+        # import pdb; pdb.set_trace()
         for t in range(self.horizon):
-            next_obs = model.get_prediction(obs, candidate_action_sequences[:, t], self.data_statistics)
-            states.append(next_obs)
+            try:
+                next_obs = model.get_prediction(obs, candidate_action_sequences[:, t], self.data_statistics)
+            except RuntimeError as e:
+                print(e)
+                print(obs.shape)
+                print(obs)
+                print(candidate_action_sequences[:, t].shape)
+                for k, v in self.data_statistics.items():
+                    print(k, v.shape)
+            
             rew, terminals = self.env.get_reward(next_obs, candidate_action_sequences[:, t])
             sum_of_rewards += rew
         return sum_of_rewards
