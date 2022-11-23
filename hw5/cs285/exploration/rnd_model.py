@@ -25,8 +25,8 @@ class RNDModel(nn.Module, BaseExplorationModel):
         # <DONE>: Create two neural networks:
         # 1) f, the random function we are trying to learn
         # 2) f_hat, the function we are using to learn f
-        self.f = ptu.build_mlp(input_size=self.ob_dim, output_size=self.output_size, n_layers=self.n_layers, size=self.size, activation='tanh')
-        self.f_hat = ptu.build_mlp(input_size=self.ob_dim, output_size=self.output_size, n_layers=self.n_layers, size=self.size, activation='tanh')
+        self.f = ptu.build_mlp(input_size=self.ob_dim, output_size=self.output_size, n_layers=self.n_layers, size=self.size, activation='tanh', init_method=init_method_1)
+        self.f_hat = ptu.build_mlp(input_size=self.ob_dim, output_size=self.output_size, n_layers=self.n_layers, size=self.size, activation='tanh', init_method=init_method_2)
         self.optimizer = optimizer_spec.constructor(self.f_hat.parameters(), **optimizer_spec.optim_kwargs)
 
     def forward(self, ob_no):
@@ -34,7 +34,7 @@ class RNDModel(nn.Module, BaseExplorationModel):
         # HINT: Remember to detach the output of self.f!
         target = self.f(ob_no).detach()
         pred = self.f_hat(ob_no)
-        return ((pred - target) ** 2).sum(-1)
+        return torch.sqrt(((pred - target) ** 2).sum(-1))
 
     def forward_np(self, ob_no):
         ob_no = ptu.from_numpy(ob_no)
